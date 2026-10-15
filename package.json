@@ -1,0 +1,44 @@
+{
+  "name": "auto-track",
+  "version": "1.0.0",
+  "description": "A modular tool for collecting student to-do items from different learning platforms and publishing them to task services",
+  "main": "dist/server.bundle.js",
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "lint": "eslint",
+    "prisma": "prisma generate",
+    "test": "vitest"
+  },
+  "keywords": [
+    "web",
+    "backend",
+    "canvas",
+    "to-do"
+  ],
+  "contributors": [
+    "lamadaemon",
+    "Acha666",
+    "nuclear-coconut",
+    "39f4jhiuonerj4ihof",
+    "SamC333"
+  ],
+  "license": "ARR",
+  "packageManager": "pnpm@10.15.1",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^26.6.5",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "prisma": "^7.10.1",
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.10.1",
+    "dotenv": "^18.0.8",
+    "fastify": "^5.12.7"
+  }
+}
