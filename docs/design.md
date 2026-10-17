@@ -14,7 +14,7 @@ Existing workarounds fall short. Canvas can export a calendar feed [1], but it c
 
 Research on student time management supports the intuition. Britton and Tesser [2] found that short-range planning, the daily "what is due" view, predicted college GPA more strongly than aptitude scores did. Ariely and Wertenbroch [3] showed that binding, well-spaced deadlines improve performance; a deadline can only do that if the student sees it coming. A fragmented view of deadlines undermines exactly the planning that helps.
 
-<!-- User research: add the team's survey or interview findings here (how many classmates, platforms per person, how they track deadlines today, how often they missed one). -->
+No wider user research was conducted. The problem statement is based on the development team's own experience as students and on what the team needs from the tool.
 
 1. Instructure, *Canvas Student Guide*: Dashboard, To Do list, and Calendar feed. https://community.canvaslms.com/t5/Student-Guide/tkb-p/student
 2. Britton, B. K., & Tesser, A. (1991). Effects of time-management practices on college grades. *Journal of Educational Psychology*, 83(3), 405–410. https://doi.org/10.1037/0022-0663.83.3.405

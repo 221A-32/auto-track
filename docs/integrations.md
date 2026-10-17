@@ -9,7 +9,7 @@ Platform-specific notes for the source and target adapters. The shared behavior 
 - **Mapping:** `plannable_type` → item type (assignment, quiz, discussion_topic, announcement, calendar_event, wiki_page, planner_note); `plannable.due_at` → due; `html_url` → link; `context_name` → course. `plannable_date` is a display date and is not used as a deadline.
 - **Session:** the backend keeps a cookie jar and applies `Set-Cookie` updates. A 401 or a redirect to the login page marks the source expired and asks for new cookies. Automated SSO login is out of scope; see Instructure's [cookie notice](https://www.instructure.com/policies/canvas-lms-cookie-notice).
 
-PrairieLearn and PrairieTest adapters will follow the same contract later.
+PrairieLearn and PrairieTest are planned for future support, and their adapters will follow the same contract.
 
 ## CalDAV (target)
 

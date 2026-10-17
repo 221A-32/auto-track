@@ -1,7 +1,5 @@
 # AutoTrack
 
-<!-- Add the team logo here once chosen, e.g. <img src="docs/assets/logo.svg" width="96"> -->
-
 **Every deadline in one place, inside the task app you already use.**
 
 AutoTrack is a self-hosted tool for a single student. It collects upcoming work from learning platforms, merges it into one list, filters it with rules you define, and keeps that list in sync with CalDAV task lists and Microsoft To Do.
@@ -60,14 +58,11 @@ Database and other settings are read from `.env`.
 
 ## Team
 
-<!-- Team name goes here. Each of the three roles needs one primary owner. -->
-
 | Member | Role |
 | --- | --- |
-| [@lamadaemon](https://github.com/lamadaemon) | TBD |
-| [@Acha666](https://github.com/Acha666) | TBD |
-| [@nuclear-coconut](https://github.com/nuclear-coconut) | TBD |
-| [@39f4jhiuonerj4ihof](https://github.com/39f4jhiuonerj4ihof) | TBD |
-| [@SamC333](https://github.com/SamC333) | TBD |
+| [@lamadaemon](https://github.com/lamadaemon) | Lead Dev |
+| [@Acha666](https://github.com/Acha666) | Lead PM & designer |
+| [@nuclear-coconut](https://github.com/nuclear-coconut) | Reviewer |
+| [@39f4jhiuonerj4ihof](https://github.com/39f4jhiuonerj4ihof) | Dev, designer |
+| [@SamC333](https://github.com/SamC333) | Dev |
 
-Roles are project manager, designer, and developer. Everyone contributes across roles; the table records who owns each one.
