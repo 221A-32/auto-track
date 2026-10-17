@@ -1,57 +1,50 @@
 # Integrations
 
-This document describes planned integrations. No adapter or authentication flow has been implemented.
+Platform-specific notes for the source and target adapters. The shared behavior (identity, retention, one-way sync) is specified in [design.md](design.md#behavior).
 
-## Shared adapter contracts
+## Canvas (source)
 
-Source adapters will validate connections and remote account identity, fetch items with their source context, maintain authentication state, and report connection health. They will supply data for the normalized collection rather than construct target-specific tasks.
+- **Connection:** instance URL plus browser cookies pasted by the user. Identity is verified with `GET /api/v1/users/self`; the returned user id and the canonical instance host form the connection identity.
+- **Items:** `GET /api/v1/planner/items` with a date window, following `Link` pagination until the last page. A partial read is treated as a failure, not as an empty result. See the [Planner API](https://developerdocs.instructure.com/services/canvas/resources/planner).
+- **Mapping:** `plannable_type` → item type (assignment, quiz, discussion_topic, announcement, calendar_event, wiki_page, planner_note); `plannable.due_at` → due; `html_url` → link; `context_name` → course. `plannable_date` is a display date and is not used as a deadline.
+- **Session:** the backend keeps a cookie jar and applies `Set-Cookie` updates. A 401 or a redirect to the login page marks the source expired and asks for new cookies. Automated SSO login is out of scope; see Instructure's [cookie notice](https://www.instructure.com/policies/canvas-lms-cookie-notice).
 
-Target adapters will validate connections, select the destination collection, publish source-derived fields, and read the completion state of managed tasks. They will use persistent mappings supplied by the synchronization engine. All targets will consume the same eligible collection and preserve completion independently.
+PrairieLearn and PrairieTest are planned for future support, and their adapters will follow the same contract.
 
-PrairieLearn and PrairieTest are reserved source adapters. Their authentication, discovery, and extraction behavior will be designed later; this stage establishes only the shared source contract.
+## CalDAV (target)
 
-## Canvas
+- **Connection:** server URL, username, password. Discovery follows [RFC 4791](https://www.rfc-editor.org/info/rfc4791/): principal → calendar home → collections whose `supported-calendar-component-set` includes `VTODO`. Only those are offered as destinations.
+- **Mapping** ([RFC 5545](https://www.rfc-editor.org/rfc/rfc5545.html) `VTODO`):
 
-Configuration will include the instance URL and cookies entered through the frontend. The backend will validate account identity, reject duplicate source accounts, and fetch the student's Planner items with scheduled or manual runs.
-
-The [Planner API](https://developerdocs.instructure.com/services/canvas/resources/planner) provides `GET /api/v1/planner/items`, pagination, date filtering, and source status information. The adapter will normalize available item types and links. A Planner display date will not automatically be treated as a deadline.
-
-The backend will maintain a Cookie jar and save applicable `Set-Cookie` updates. Session maintenance is best effort: the [official Cookie Notice](https://www.instructure.com/policies/canvas-lms-cookie-notice) describes expiry requiring renewed authentication. An expired session will prompt replacement cookies. Automated SSO login is outside the initial design.
-
-Cookie-based access will require validation against the configured instance during implementation. Credentials will stay in the backend, and source fetch failures will preserve the last successful snapshot.
-
-## CalDAV
-
-Configuration will include the service URL, authentication details, and selected task collection. The adapter will validate access and support for `VTODO` before publication. CalDAV task interoperability is defined by [RFC 4791](https://www.rfc-editor.org/info/rfc4791/) and the iCalendar format in [RFC 5545](https://www.rfc-editor.org/rfc/rfc5545.html).
-
-| Source data or synchronization state | Planned mapping |
+| Item field | VTODO property |
 | --- | --- |
-| Stable item identity | Stable `UID`, with the remote resource recorded in the target mapping. |
-| Title | `SUMMARY`. |
-| Description and course context | `DESCRIPTION`. |
-| Available deadline | `DUE`, retaining compatible date or time semantics. |
-| Original source link | `URL`. |
-| Existing target completion | Preserve the target's completion properties when updating source-derived fields. |
+| Identity | `UID` (stable, derived from item identity) |
+| Title | `SUMMARY` |
+| Course, type, link | `DESCRIPTION` |
+| Due | `DUE` (date-time with timezone when available, otherwise date) |
+| Link | `URL` |
+| Completion | `STATUS`, `COMPLETED`, `PERCENT-COMPLETE` are read, never written |
 
-Updates will respect the server's resource versioning to avoid overwriting a concurrent completion change. Missing or excluded source items will retain existing tasks according to the [synchronization policy](architecture.md#rules-and-synchronization).
+- **Updates:** `PUT` with `If-Match: <etag>`; on `412` re-read the resource, merge completion properties, and retry once. A `404` on update marks the mapping removed in target.
 
-## Microsoft To Do
+## Microsoft To Do (target)
 
-The intended default application will be a Microsoft Entra multitenant public client supporting organizational and personal Microsoft accounts. It has not been registered, and no default Client ID is available yet.
+- **Registration:** a Microsoft Entra multitenant public client (work, school, and personal accounts) is the intended default. Until it is registered the UI offers only a custom registration (client id and tenant, default `common`). Public client flow must be enabled; no client secret is used.
+- **Sign-in:** [device code flow](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code) via [MSAL Node](https://learn.microsoft.com/en-us/entra/msal/javascript/node/acquire-token-requests). Scopes `Tasks.ReadWrite offline_access`. The token cache is persisted per connection; silent renewal runs before each publish, and a failed renewal marks the target as sign-in required.
+- **Mapping** ([Graph todoTask](https://learn.microsoft.com/en-us/graph/api/resources/todotask?view=graph-rest-1.0)):
 
-Each connection will select a task list and support either the future default registration or a bring-your-own registration. BYO configuration will accept a Client ID and authority or tenant appropriate to that registration. The registration must allow public client flows; Device Code authentication will not require a client secret.
+| Item field | todoTask field |
+| --- | --- |
+| Title | `title` |
+| Course, type, link | `body.content` (text) and `linkedResources[0]` |
+| Due | `dueDateTime` (date and timezone; the To Do app shows the date only) |
+| Completion | `status`, `completedDateTime` are read, never written |
 
-Authentication will follow the [Device Code protocol](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code): the backend initiates the request, and the frontend displays the returned verification address and user code. Pending, declined, expired, and successful login states will be reported. Delegated `Tasks.ReadWrite` will authorize task management, with `offline_access` requested for background renewal. Organization policies may require administrator consent or renewed authentication.
+- **Lists:** `GET /me/todo/lists` for destination selection; tasks live under `/me/todo/lists/{id}/tasks`. A `404` on update marks the mapping removed in target.
 
-[MSAL Node](https://learn.microsoft.com/en-us/entra/msal/javascript/node/acquire-token-requests) will handle token acquisition, caching, and silent renewal. Authentication state must remain associated with the correct account and registration across connections and restarts. Changes to the registration will require a matching authentication context.
+## References
 
-The [Microsoft Graph task model](https://learn.microsoft.com/en-us/graph/api/resources/todotask?view=graph-rest-1.0) supplies fields for titles, bodies, deadlines, status, and source links. The adapter will map normalized content to these fields, record remote task identifiers, and preserve completed tasks during subsequent updates. Target date and time limitations will be documented during implementation.
+Prior art that informed adapter boundaries. Their code is not used here.
 
-## Reference implementations
-
-These projects provide examples of integration approaches. AutoTrack's design is written independently; their code and documentation are not included in this repository. Official protocol documentation remains the authority for API behavior.
-
-- [caldav-canvas-gradescope](https://github.com/nyiyui/caldav-canvas-gradescope): an example of Canvas Planner access using cookies and publication to CalDAV tasks. Its separation between extraction and publication informs adapter boundaries.
-- [ms-todo-mcp](https://github.com/dcarrascosa/ms-todo-mcp): an example of Microsoft To Do access using Device Code authentication and persisted credentials. Its MCP interface is outside AutoTrack's design.
-
-The deployment design will use [Docker Compose](https://docs.docker.com/compose/); no deployment artifacts are included at this stage.
+- [caldav-canvas-gradescope](https://github.com/nyiyui/caldav-canvas-gradescope): Canvas Planner via cookies, published to CalDAV.
+- [ms-todo-mcp](https://github.com/dcarrascosa/ms-todo-mcp): Microsoft To Do via device code with a persisted token cache.
