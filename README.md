@@ -1,3 +1,7 @@
+<p align="center">
+  <img alt="AutoTrack logo" width="128" height="128" src="docs/assets/logo.png">
+</p>
+
 # AutoTrack
 
 **Every deadline in one place, inside the task app you already use.**
